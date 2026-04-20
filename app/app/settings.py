@@ -20,14 +20,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
+def parse_debug(value):
+    """Parse DEBUG environment variable accepting common truthy strings."""
+    if value is None:
+        return False
+    value_lower = str(value).lower().strip()
+    return value_lower in ('1', 'true', 'yes', 'on')
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-a26ktfwd5!=-)bs3f3)s955alcjar1ym8jvkuc0&(snl(m#v2p'
+SECRET_KEY = getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise RuntimeError('SECRET_KEY environment variable is not set')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = parse_debug(getenv('DEBUG', '0'))
 
 ALLOWED_HOSTS = []
 
+ALLOWED_HOSTS.extend(
+    filter(
+        None,
+        getenv('ALLOWED_HOSTS', '').split(','),
+    )
+)
 
 # Application definition
 

@@ -4,36 +4,40 @@ services:
   app:
     build:
       context: .
-      args:
-        - DEV=true
-    ports:
-      - "8000:8000"
+    restart: always
     volumes:
-      - ./app:/app
-      - dev-static-data:/vol/web
-    command: >
-      sh -c "python manage.py wait_for_db &&
-             python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+      - static-data:/vol/web
     environment:
       - DB_HOST=db
       - DB_NAME=${DB_NAME:?DB_NAME is required}
       - DB_USER=${DB_USER:?DB_USER is required}
       - DB_PASS=${DB_PASS:?DB_PASS is required}
       - SECRET_KEY=${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
-      - DEBUG=1
+      - ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:?DJANGO_ALLOWED_HOSTS is required}
     depends_on:
       - db
 
   db:
-    image: postgres:18-alpine
+    image: postgres:13-alpine
+    restart: always
     volumes:
-      - dev-db-data:/var/lib/postgresql
+      - postgres-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${DB_NAME:?DB_NAME is required}
       - POSTGRES_USER=${DB_USER:?DB_USER is required}
       - POSTGRES_PASSWORD=${DB_PASS:?DB_PASS is required}
 
+  proxy:
+    build:
+      context: ./proxy
+    restart: always
+    depends_on:
+      - app
+    ports:
+      - 80:8000
+    volumes:
+      - static-data:/vol/static
+
 volumes:
-  dev-db-data:
-  dev-static-data:
+  postgres-data:
+  static-data:
