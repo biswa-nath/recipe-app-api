@@ -50,8 +50,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def _params_to_ints(self, qs):
-        """Convert a list of strings to integers."""
-        return [int(str_id) for str_id in qs.split(',')]
+        """Convert a list of strings to integers, ignoring invalid values."""
+        result = []
+        for str_id in qs.split(','):
+            str_id = str_id.strip()
+            if str_id:
+                try:
+                    result.append(int(str_id))
+                except ValueError:
+                    pass  # Skip invalid values
+        return result
 
     def get_queryset(self):
         """Retrieve recipes for authenticated user."""
@@ -116,9 +124,13 @@ class BaseRecipeAttrViewSet(mixins.DestroyModelMixin,
 
     def get_queryset(self):
         """Filter queryset to authenticated user."""
-        assigned_only = bool(
-            int(self.request.query_params.get('assigned_only', 0))
-        )
+        try:
+            assigned_only = bool(
+                int(self.request.query_params.get('assigned_only', 0))
+            )
+        except (ValueError, TypeError):
+            assigned_only = False
+
         queryset = self.queryset
         if assigned_only:
             queryset = queryset.filter(recipe__isnull=False)
